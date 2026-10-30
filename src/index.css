@@ -1,0 +1,208 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@layer base {
+  :root {
+    --font-display: 'Cinzel', serif;
+    --font-serif: 'Playfair Display', Georgia, serif;
+    --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  }
+
+  html, body {
+    font-family: var(--font-sans);
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  html::-webkit-scrollbar,
+  body::-webkit-scrollbar,
+  *::-webkit-scrollbar {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
+    background: transparent !important;
+  }
+
+  * {
+    scrollbar-width: none !important;
+    -ms-overflow-style: none !important;
+  }
+
+
+  body {
+    background-color: #faf7fd;
+    color: #21133b;
+    transition: background-color 0.3s ease, color 0.3s ease;
+  }
+
+  html.dark body {
+    background-color: #0e0919;
+    color: #f7f4fd;
+  }
+}
+
+.font-display {
+  font-family: 'Cinzel', serif;
+}
+
+.font-serif {
+  font-family: 'Playfair Display', Georgia, serif;
+}
+
+.font-sans {
+  font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+}
+
+/* Luxury Light & Dark Glassmorphism */
+.glass-panel {
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(54, 37, 92, 0.08);
+}
+
+html.dark .glass-panel {
+  background: rgba(22, 14, 40, 0.72);
+  border: 1px solid rgba(210, 195, 246, 0.12);
+}
+
+.glass-panel-violet {
+  background: linear-gradient(135deg, rgba(210, 195, 246, 0.2), rgba(255, 255, 255, 0.9));
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(54, 37, 92, 0.2);
+}
+
+html.dark .glass-panel-violet {
+  background: linear-gradient(135deg, rgba(54, 37, 92, 0.5), rgba(19, 12, 34, 0.85));
+  border: 1px solid rgba(210, 195, 246, 0.25);
+}
+
+/* For backwards compatibility */
+.glass-panel-gold {
+  background: linear-gradient(135deg, rgba(210, 195, 246, 0.2), rgba(255, 255, 255, 0.9));
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(54, 37, 92, 0.2);
+}
+
+html.dark .glass-panel-gold {
+  background: linear-gradient(135deg, rgba(54, 37, 92, 0.5), rgba(19, 12, 34, 0.85));
+  border: 1px solid rgba(210, 195, 246, 0.25);
+}
+
+.text-gold-gradient,
+.text-lavender-gradient {
+  background: linear-gradient(135deg, #36255c 0%, #683fb5 50%, #8b5cf6 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+html.dark .text-gold-gradient,
+html.dark .text-lavender-gradient {
+  background: linear-gradient(135deg, #ffffff 0%, #d2c3f6 50%, #c084fc 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.lavender-glow,
+.gold-glow {
+  box-shadow: 0 0 35px -5px rgba(210, 195, 246, 0.45);
+}
+
+.violet-glow {
+  box-shadow: 0 0 35px -5px rgba(54, 37, 92, 0.5);
+}
+
+.gold-border-glow,
+.lavender-border-glow {
+  box-shadow: 0 0 20px -3px rgba(210, 195, 246, 0.35);
+}
+
+/* Equalizer Bars Animation */
+@keyframes soundwave-1 {
+  0%, 100% { height: 6px; }
+  50% { height: 22px; }
+}
+
+@keyframes soundwave-2 {
+  0%, 100% { height: 18px; }
+  50% { height: 8px; }
+}
+
+@keyframes soundwave-3 {
+  0%, 100% { height: 10px; }
+  50% { height: 26px; }
+}
+
+@keyframes soundwave-4 {
+  0%, 100% { height: 24px; }
+  50% { height: 12px; }
+}
+
+.animate-wave-1 {
+  animation: soundwave-1 0.8s ease-in-out infinite;
+}
+.animate-wave-2 {
+  animation: soundwave-2 0.7s ease-in-out infinite;
+}
+.animate-wave-3 {
+  animation: soundwave-3 0.9s ease-in-out infinite;
+}
+.animate-wave-4 {
+  animation: soundwave-4 0.65s ease-in-out infinite;
+}
+
+/* Subtle Shimmer Effect */
+@keyframes shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.shimmer-btn {
+  position: relative;
+  overflow: hidden;
+}
+
+.shimmer-btn::after {
+  position: absolute;
+  top: 0; right: 0; bottom: 0; left: 0;
+  transform: translateX(-100%);
+  background-image: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0) 0,
+    rgba(255, 255, 255, 0.2) 20%,
+    rgba(255, 255, 255, 0.35) 60%,
+    rgba(255, 255, 255, 0)
+  );
+  animation: shimmer 3s infinite;
+  content: '';
+}
+
+/* Continuous Auto-Scroll Runway Carousel Animation */
+@keyframes runwayScroll {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-runway {
+  animation: runwayScroll 32s linear infinite;
+}
+
+.animate-runway:hover {
+  animation-play-state: paused;
+}
+
+.animate-runway-slow {
+  animation: runwayScroll 48s linear infinite;
+}
+
+.animate-runway-slow:hover {
+  animation-play-state: paused;
+}
