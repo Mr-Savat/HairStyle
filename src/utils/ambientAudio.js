@@ -25,17 +25,31 @@ class AmbientSoundscape {
     filter.connect(this.ctx.destination);
   }
 
+  async resume() {
+    this.init();
+    if (this.ctx && this.ctx.state === 'suspended') {
+      try {
+        await this.ctx.resume();
+      } catch (e) {}
+    }
+  }
+
   async start(volume = 0.25) {
     this.init();
     if (!this.ctx) return;
+    
     if (this.ctx.state === 'suspended') {
       try {
         await this.ctx.resume();
-      } catch (e) {
-        console.warn('AudioContext resume error:', e);
-      }
+      } catch (e) {}
     }
-    if (this.isPlaying) return;
+
+    if (this.isPlaying) {
+      if (this.ctx.state === 'suspended') {
+        try { await this.ctx.resume(); } catch (e) {}
+      }
+      return;
+    }
 
     // Harmonic chord frequencies (warm Fmaj9 chord: F2, C3, A3, E4)
     const freqs = [87.31, 130.81, 220.0, 329.63];
@@ -52,9 +66,7 @@ class AmbientSoundscape {
       oscGain.gain.setValueAtTime(0.05 / (i + 1), this.ctx.currentTime);
       osc.connect(oscGain);
       oscGain.connect(this.masterGain);
-      try {
-        osc.start();
-      } catch (e) {}
+      osc.start();
       return osc;
     });
 
@@ -69,12 +81,12 @@ class AmbientSoundscape {
     if (!this.ctx || !this.isPlaying) return;
     this.masterGain.gain.cancelScheduledValues(this.ctx.currentTime);
     this.masterGain.gain.exponentialRampToValueAtTime(0.0001, this.ctx.currentTime + 0.6);
+    this.isPlaying = false;
     setTimeout(() => {
       this.oscillators.forEach(osc => {
         try { osc.stop(); osc.disconnect(); } catch (e) {}
       });
       this.oscillators = [];
-      this.isPlaying = false;
     }, 700);
   }
 

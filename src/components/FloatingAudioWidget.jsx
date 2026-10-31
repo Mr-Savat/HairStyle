@@ -49,9 +49,9 @@ export default function FloatingAudioWidget({
             : 'bg-white/95 dark:bg-[#120921]/90 border-purple-100 dark:border-[#36255C]/70 shadow-black/20 dark:shadow-black/60'
         }`}
       >
-        {/* Compact Pill (Always Visible) */}
+        {/* Compact Pill (Always Visible & Playing by default) */}
         <div className="flex items-center gap-3 px-4 py-2.5 cursor-pointer">
-          {/* Play / Pause Video Button */}
+          {/* Play / Pause Toggle Button */}
           <button
             onClick={handleTogglePlay}
             className={`p-1.5 rounded-xl transition-all cursor-pointer ${
@@ -59,7 +59,7 @@ export default function FloatingAudioWidget({
                 ? 'bg-[#D2C3F6]/25 text-[#4C2F8A] dark:text-[#D2C3F6]'
                 : 'bg-purple-50 hover:bg-purple-100 dark:bg-[#1B1233] text-stone-500'
             }`}
-            title={isPlaying ? 'Click to Pause Video' : 'Click to Play Video'}
+            title={isPlaying ? 'Click to Pause' : 'Click to Play'}
             aria-label="Toggle Video Play"
           >
             {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4 fill-current" />}
@@ -71,14 +71,14 @@ export default function FloatingAudioWidget({
           <button
             onClick={toggleAudio}
             className="flex items-center gap-2 group cursor-pointer"
-            title={isAudioMuted ? 'Click to Enable Salon Atmosphere' : 'Click to Mute'}
+            title={isAudioMuted ? 'Click to Unmute Atmosphere' : 'Click to Mute'}
             aria-label="Toggle Sound"
           >
             <div
               className={`p-1.5 rounded-xl transition-all ${
                 !isAudioMuted
                   ? 'bg-[#D2C3F6]/25 text-[#4C2F8A] dark:text-[#D2C3F6]'
-                  : 'bg-purple-100/70 dark:bg-[#251745] text-[#8B5CF6] dark:text-[#D2C3F6] animate-pulse hover:bg-[#D2C3F6]/25'
+                  : 'text-stone-400 hover:text-stone-600 dark:hover:text-stone-200'
               }`}
             >
               {!isAudioMuted ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
@@ -88,17 +88,15 @@ export default function FloatingAudioWidget({
 
             <div className="text-left hidden sm:block">
               <div className="flex items-center gap-1.5">
-                {isPlaying && !isAudioMuted ? (
+                {isPlaying && !isAudioMuted && (
                   <span className="w-1.5 h-1.5 rounded-full bg-[#D2C3F6] animate-pulse" />
-                ) : (
-                  <span className="w-1.5 h-1.5 rounded-full bg-purple-400" />
                 )}
                 <span className="text-[10px] uppercase tracking-wider font-bold text-stone-900 dark:text-stone-100">
-                  {isPlaying && !isAudioMuted ? 'Playing Live' : 'Click For Sound'}
+                  {isPlaying && !isAudioMuted ? 'Playing Live' : isPlaying ? 'Video Playing' : 'Paused'}
                 </span>
               </div>
               <span className="block text-[9px] text-stone-500 dark:text-stone-400 tracking-wider">
-                {!isAudioMuted ? 'Salon Atmosphere On' : 'Tap to Listen'}
+                {!isAudioMuted ? 'Salon Atmosphere On' : 'Audio Muted'}
               </span>
             </div>
           </button>
@@ -114,7 +112,7 @@ export default function FloatingAudioWidget({
               </span>
               <span className="flex items-center gap-1 text-[10px] text-[#6D3ABF] dark:text-[#D2C3F6] font-medium">
                 <span className="w-1.5 h-1.5 rounded-full bg-[#D2C3F6] animate-ping" />
-                <span>{!isAudioMuted ? 'Active' : 'Click to Enable'}</span>
+                <span>Default Active</span>
               </span>
             </div>
 
@@ -135,7 +133,7 @@ export default function FloatingAudioWidget({
             </div>
 
             <div className="text-[10px] text-stone-500 dark:text-stone-400 mt-2 text-center">
-              {!isAudioMuted ? 'Calming acoustic lounge soundscape' : 'Click the icon or tap anywhere on page to enable'}
+              Plays automatically on load with relaxing salon audio
             </div>
           </div>
         )}

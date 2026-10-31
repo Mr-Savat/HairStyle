@@ -47,68 +47,79 @@ export default function App() {
     setTheme(prev => (prev === 'dark' ? 'light' : 'dark'));
   };
 
-  // Audio state: Auto play with sound by default
+  // Audio state: Default to PLAYING with sound
   const [isAudioMuted, setIsAudioMuted] = useState(false);
   const [isAudioPlaying, setIsAudioPlaying] = useState(true);
 
-  // Auto-play video and sound immediately on open
+  // Auto-play video and sound on load + handle browser autoplay permissions seamlessly
   useEffect(() => {
-    const startAudioAndVideo = async () => {
+    const playMedia = async () => {
       if (videoRef.current) {
         videoRef.current.muted = false;
         videoRef.current.volume = 0.7;
         try {
           await videoRef.current.play();
+          ambientSound.start(0.25);
+          setIsPlaying(true);
+          setIsAudioMuted(false);
+          setIsAudioPlaying(true);
         } catch (err) {
-          // If browser requires user gesture for unmuted video, keep video playing and unlock unmuted on first interaction
-          videoRef.current.muted = true;
-          videoRef.current.play().catch(() => {});
+          // If browser restricts unmuted autoplay on cold start,
+          // temporarily mute the video element so video starts playing visually,
+          // but keep audio state ON and immediately unmute on the first touch or click.
+          if (videoRef.current) {
+            videoRef.current.muted = true;
+            videoRef.current.play().catch(() => {});
+          }
+
+          const unlockAudioOnGesture = async () => {
+            if (videoRef.current) {
+              videoRef.current.muted = false;
+              videoRef.current.volume = 0.7;
+              videoRef.current.play().catch(() => {});
+            }
+
+            try {
+              await ambientSound.resume();
+              ambientSound.start(0.25);
+            } catch (e) {}
+
+            setIsAudioMuted(false);
+            setIsAudioPlaying(true);
+            setIsPlaying(true);
+
+            // Clean up listeners
+            ['click', 'pointerdown', 'touchstart', 'keydown'].forEach(evt => {
+              window.removeEventListener(evt, unlockAudioOnGesture, true);
+            });
+          };
+
+          ['click', 'pointerdown', 'touchstart', 'keydown'].forEach(evt => {
+            window.addEventListener(evt, unlockAudioOnGesture, { once: true, capture: true });
+          });
         }
       }
-      try {
-        await ambientSound.start(0.25);
-      } catch (err) {}
     };
 
-    startAudioAndVideo();
-
-    // Ensure audio un-mutes automatically on any first interaction (move, touch, click, scroll)
-    const unlockOnInteraction = () => {
-      if (videoRef.current) {
-        videoRef.current.muted = false;
-        videoRef.current.volume = 0.7;
-        videoRef.current.play().catch(() => {});
-      }
-      ambientSound.start(0.25);
-      setIsAudioMuted(false);
-      setIsAudioPlaying(true);
-    };
-
-    const events = ['click', 'touchstart', 'pointerdown', 'mousemove', 'keydown', 'scroll'];
-    events.forEach(evt => window.addEventListener(evt, unlockOnInteraction, { once: true, passive: true }));
-
-    return () => {
-      events.forEach(evt => window.removeEventListener(evt, unlockOnInteraction));
-    };
+    playMedia();
   }, []);
 
-  const toggleAudio = async () => {
-    // If audio is currently muted, or if video is muted/paused, unmute and play immediately
-    const shouldUnmute = isAudioMuted || (videoRef.current && videoRef.current.muted);
-    if (shouldUnmute) {
+  const toggleAudio = () => {
+    if (isAudioMuted || (videoRef.current && videoRef.current.muted)) {
+      ambientSound.resume();
+      ambientSound.start(0.25);
       if (videoRef.current) {
         videoRef.current.muted = false;
         videoRef.current.volume = 0.7;
         videoRef.current.play().catch(() => {});
       }
-      await ambientSound.start(0.25);
       setIsAudioMuted(false);
       setIsAudioPlaying(true);
     } else {
+      ambientSound.stop();
       if (videoRef.current) {
         videoRef.current.muted = true;
       }
-      ambientSound.stop();
       setIsAudioMuted(true);
       setIsAudioPlaying(false);
     }
