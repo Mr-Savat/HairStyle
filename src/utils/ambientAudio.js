@@ -25,11 +25,15 @@ class AmbientSoundscape {
     filter.connect(this.ctx.destination);
   }
 
-  start(volume = 0.25) {
+  async start(volume = 0.25) {
     this.init();
     if (!this.ctx) return;
     if (this.ctx.state === 'suspended') {
-      this.ctx.resume();
+      try {
+        await this.ctx.resume();
+      } catch (e) {
+        console.warn('AudioContext resume error:', e);
+      }
     }
     if (this.isPlaying) return;
 
@@ -48,28 +52,30 @@ class AmbientSoundscape {
       oscGain.gain.setValueAtTime(0.05 / (i + 1), this.ctx.currentTime);
       osc.connect(oscGain);
       oscGain.connect(this.masterGain);
-      osc.start();
+      try {
+        osc.start();
+      } catch (e) {}
       return osc;
     });
 
     // Gentle fade in
     this.masterGain.gain.cancelScheduledValues(this.ctx.currentTime);
     this.masterGain.gain.setValueAtTime(0.001, this.ctx.currentTime);
-    this.masterGain.gain.exponentialRampToValueAtTime(Math.max(0.001, volume), this.ctx.currentTime + 1.5);
+    this.masterGain.gain.exponentialRampToValueAtTime(Math.max(0.001, volume), this.ctx.currentTime + 1.2);
     this.isPlaying = true;
   }
 
   stop() {
     if (!this.ctx || !this.isPlaying) return;
     this.masterGain.gain.cancelScheduledValues(this.ctx.currentTime);
-    this.masterGain.gain.exponentialRampToValueAtTime(0.0001, this.ctx.currentTime + 0.8);
+    this.masterGain.gain.exponentialRampToValueAtTime(0.0001, this.ctx.currentTime + 0.6);
     setTimeout(() => {
       this.oscillators.forEach(osc => {
         try { osc.stop(); osc.disconnect(); } catch (e) {}
       });
       this.oscillators = [];
       this.isPlaying = false;
-    }, 900);
+    }, 700);
   }
 
   setVolume(vol) {

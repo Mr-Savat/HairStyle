@@ -19,7 +19,7 @@ export default function App() {
   const [preselectedService, setPreselectedService] = useState(null);
   const [preselectedStylist, setPreselectedStylist] = useState(null);
   
-  // Video playback reference & state (Playing by default)
+  // Video playback reference & state
   const videoRef = useRef(null);
   const [isPlaying, setIsPlaying] = useState(true);
 
@@ -47,32 +47,43 @@ export default function App() {
     setTheme(prev => (prev === 'dark' ? 'light' : 'dark'));
   };
 
-  // Audio state: Default to PLAYING with sound
-  const [isAudioMuted, setIsAudioMuted] = useState(false);
-  const [isAudioPlaying, setIsAudioPlaying] = useState(true);
+  // Audio state: accurately synchronized with browser autoplay policy
+  const [isAudioMuted, setIsAudioMuted] = useState(true);
+  const [isAudioPlaying, setIsAudioPlaying] = useState(false);
+  const userManuallyMutedRef = useRef(false);
 
   // Auto-play video and sound on load + handle browser autoplay permissions seamlessly
   useEffect(() => {
+    let cleanup = () => {};
+
     const playMedia = async () => {
-      if (videoRef.current) {
+      if (!videoRef.current) return;
+
+      // First attempt to play with sound (if browser allows)
+      try {
         videoRef.current.muted = false;
         videoRef.current.volume = 0.7;
-        try {
-          await videoRef.current.play();
-          ambientSound.start(0.25);
-          setIsPlaying(true);
-          setIsAudioMuted(false);
-          setIsAudioPlaying(true);
-        } catch (err) {
-          // If browser restricts unmuted autoplay before first interaction,
-          // play video muted initially and unlock sound on the first scroll or touch
-          if (videoRef.current) {
-            videoRef.current.muted = true;
-            videoRef.current.play().catch(() => {});
-          }
+        await videoRef.current.play();
+        await ambientSound.start(0.25);
+        setIsPlaying(true);
+        setIsAudioMuted(false);
+        setIsAudioPlaying(true);
+      } catch (err) {
+        // Browser restricted unmuted autoplay before first interaction.
+        // 1. Play video muted so visuals start immediately
+        if (videoRef.current) {
+          videoRef.current.muted = true;
+          videoRef.current.play().catch(() => {});
+        }
+        setIsAudioMuted(true);
+        setIsAudioPlaying(false);
+        setIsPlaying(true);
 
-          const autoStartSound = () => {
-            ambientSound.start(0.25);
+        // 2. Automatically unlock sound on the user's very first interaction anywhere on page
+        const handleFirstInteraction = async () => {
+          if (userManuallyMutedRef.current) return;
+          try {
+            await ambientSound.start(0.25);
             if (videoRef.current) {
               videoRef.current.muted = false;
               videoRef.current.volume = 0.7;
@@ -81,34 +92,45 @@ export default function App() {
             setIsAudioMuted(false);
             setIsAudioPlaying(true);
             setIsPlaying(true);
+          } catch (e) {
+            console.warn('Audio auto-unlock on interaction:', e);
+          }
+          cleanup();
+        };
 
-            window.removeEventListener('click', autoStartSound);
-            window.removeEventListener('scroll', autoStartSound);
-            window.removeEventListener('touchstart', autoStartSound);
-            window.removeEventListener('pointerdown', autoStartSound);
-          };
-
-          window.addEventListener('click', autoStartSound, { once: true });
-          window.addEventListener('scroll', autoStartSound, { once: true, passive: true });
-          window.addEventListener('touchstart', autoStartSound, { once: true });
-          window.addEventListener('pointerdown', autoStartSound, { once: true });
-        }
+        const events = ['click', 'touchstart', 'pointerdown', 'keydown'];
+        events.forEach(evt => window.addEventListener(evt, handleFirstInteraction, { once: true }));
+        cleanup = () => {
+          events.forEach(evt => window.removeEventListener(evt, handleFirstInteraction));
+        };
       }
     };
 
     playMedia();
+
+    return () => {
+      cleanup();
+    };
   }, []);
 
-  const toggleAudio = () => {
+  const toggleAudio = async () => {
     if (isAudioMuted) {
-      ambientSound.start(0.25);
-      if (videoRef.current) {
-        videoRef.current.muted = false;
-        videoRef.current.volume = 0.7;
+      userManuallyMutedRef.current = false;
+      try {
+        await ambientSound.start(0.25);
+        if (videoRef.current) {
+          videoRef.current.muted = false;
+          videoRef.current.volume = 0.7;
+          videoRef.current.play().catch(() => {});
+        }
+        setIsAudioMuted(false);
+        setIsAudioPlaying(true);
+        setIsPlaying(true);
+      } catch (e) {
+        console.warn('Failed to start audio:', e);
       }
-      setIsAudioMuted(false);
-      setIsAudioPlaying(true);
     } else {
+      userManuallyMutedRef.current = true;
       ambientSound.stop();
       if (videoRef.current) {
         videoRef.current.muted = true;
