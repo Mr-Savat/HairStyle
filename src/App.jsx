@@ -19,7 +19,7 @@ export default function App() {
   const [preselectedService, setPreselectedService] = useState(null);
   const [preselectedStylist, setPreselectedStylist] = useState(null);
   
-  // Video playback reference & state
+  // Video playback reference & state (Playing by default)
   const videoRef = useRef(null);
   const [isPlaying, setIsPlaying] = useState(true);
 
@@ -47,94 +47,68 @@ export default function App() {
     setTheme(prev => (prev === 'dark' ? 'light' : 'dark'));
   };
 
-  // Audio state: accurately synchronized with browser autoplay policy
-  const [isAudioMuted, setIsAudioMuted] = useState(true);
-  const [isAudioPlaying, setIsAudioPlaying] = useState(false);
-  const userManuallyMutedRef = useRef(false);
+  // Audio state: Auto play with sound by default
+  const [isAudioMuted, setIsAudioMuted] = useState(false);
+  const [isAudioPlaying, setIsAudioPlaying] = useState(true);
 
-  // Auto-play video and sound on load + handle browser autoplay permissions seamlessly
+  // Auto-play video and sound immediately on open
   useEffect(() => {
-    let cleanup = () => {};
-
-    const playMedia = async () => {
-      if (!videoRef.current) return;
-
-      // First attempt to play with sound (if browser allows)
-      try {
+    const startAudioAndVideo = async () => {
+      if (videoRef.current) {
         videoRef.current.muted = false;
         videoRef.current.volume = 0.7;
-        await videoRef.current.play();
-        await ambientSound.start(0.25);
-        setIsPlaying(true);
-        setIsAudioMuted(false);
-        setIsAudioPlaying(true);
-      } catch (err) {
-        // Browser restricted unmuted autoplay before first interaction.
-        // 1. Play video muted so visuals start immediately
-        if (videoRef.current) {
+        try {
+          await videoRef.current.play();
+        } catch (err) {
+          // If browser requires user gesture for unmuted video, keep video playing and unlock unmuted on first interaction
           videoRef.current.muted = true;
           videoRef.current.play().catch(() => {});
         }
-        setIsAudioMuted(true);
-        setIsAudioPlaying(false);
-        setIsPlaying(true);
-
-        // 2. Automatically unlock sound on the user's very first interaction anywhere on page
-        const handleFirstInteraction = async () => {
-          if (userManuallyMutedRef.current) return;
-          try {
-            await ambientSound.start(0.25);
-            if (videoRef.current) {
-              videoRef.current.muted = false;
-              videoRef.current.volume = 0.7;
-              videoRef.current.play().catch(() => {});
-            }
-            setIsAudioMuted(false);
-            setIsAudioPlaying(true);
-            setIsPlaying(true);
-          } catch (e) {
-            console.warn('Audio auto-unlock on interaction:', e);
-          }
-          cleanup();
-        };
-
-        const events = ['click', 'touchstart', 'pointerdown', 'keydown'];
-        events.forEach(evt => window.addEventListener(evt, handleFirstInteraction, { once: true }));
-        cleanup = () => {
-          events.forEach(evt => window.removeEventListener(evt, handleFirstInteraction));
-        };
       }
+      try {
+        await ambientSound.start(0.25);
+      } catch (err) {}
     };
 
-    playMedia();
+    startAudioAndVideo();
+
+    // Ensure audio un-mutes automatically on any first interaction (move, touch, click, scroll)
+    const unlockOnInteraction = () => {
+      if (videoRef.current) {
+        videoRef.current.muted = false;
+        videoRef.current.volume = 0.7;
+        videoRef.current.play().catch(() => {});
+      }
+      ambientSound.start(0.25);
+      setIsAudioMuted(false);
+      setIsAudioPlaying(true);
+    };
+
+    const events = ['click', 'touchstart', 'pointerdown', 'mousemove', 'keydown', 'scroll'];
+    events.forEach(evt => window.addEventListener(evt, unlockOnInteraction, { once: true, passive: true }));
 
     return () => {
-      cleanup();
+      events.forEach(evt => window.removeEventListener(evt, unlockOnInteraction));
     };
   }, []);
 
   const toggleAudio = async () => {
-    if (isAudioMuted) {
-      userManuallyMutedRef.current = false;
-      try {
-        await ambientSound.start(0.25);
-        if (videoRef.current) {
-          videoRef.current.muted = false;
-          videoRef.current.volume = 0.7;
-          videoRef.current.play().catch(() => {});
-        }
-        setIsAudioMuted(false);
-        setIsAudioPlaying(true);
-        setIsPlaying(true);
-      } catch (e) {
-        console.warn('Failed to start audio:', e);
+    // If audio is currently muted, or if video is muted/paused, unmute and play immediately
+    const shouldUnmute = isAudioMuted || (videoRef.current && videoRef.current.muted);
+    if (shouldUnmute) {
+      if (videoRef.current) {
+        videoRef.current.muted = false;
+        videoRef.current.volume = 0.7;
+        videoRef.current.play().catch(() => {});
       }
+      await ambientSound.start(0.25);
+      setIsAudioMuted(false);
+      setIsAudioPlaying(true);
     } else {
-      userManuallyMutedRef.current = true;
-      ambientSound.stop();
       if (videoRef.current) {
         videoRef.current.muted = true;
       }
+      ambientSound.stop();
       setIsAudioMuted(true);
       setIsAudioPlaying(false);
     }
